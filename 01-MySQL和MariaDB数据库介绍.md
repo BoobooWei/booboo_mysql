@@ -1,21 +1,6 @@
 ## MySQL和MariaDB数据库介绍
-- [MySQL和MariaDB数据库介绍](#mysql和mariadb数据库介绍)
-	- [数据库的基础概念](#数据库的基础概念)
-	- [数据库的分类](#数据库的分类)
-	- [什么是MySQL](#什么是mysql)
-		- [MySQL 逻辑架构](#mysql-逻辑架构)
-		- [MySQL 存储引擎](#mysql-存储引擎)
-			- [* 存储引擎概述 *](#-存储引擎概述-)
-			- [* 知名的两大存储引擎 *](#-知名的两大存储引擎-)
-			- [* 事务 *](#-事务-)
-			- [* 并发控制 *](#-并发控制-)
-	- [如何获得MySQL相关资源](#如何获得mysql相关资源)
-	- [MySQL在企业中的应用场景](#mysql在企业中的应用场景)
-	- [MySQL 安装](#mysql-安装)
-		- [RHEL 7.2 RPM 包安装 MariaDB 5.5](#rhel-7.2-rpm-包安装-mariadb-5.5)
-		- [MySQL客户端的使用](#mysql客户端的使用)
-		- [PHPmyAdmin在线工具使用](#phpmyadmin在线工具使用)
 
+[TOC]
 
 ### 数据库的基础概念
 

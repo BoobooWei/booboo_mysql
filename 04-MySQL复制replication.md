@@ -1,5 +1,7 @@
 ## 复制 AB replication
 
+[TOC]
+
 > 本讲义参考 《 HA mysql 》 高可用MySQL:第2版 /(美)贝尔(Bell,C.),(美)肯德尔(Kindahl,M.),(美)塞尔曼
 
 ### 复制概述
