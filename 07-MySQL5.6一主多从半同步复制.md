@@ -140,6 +140,7 @@ rpl_semi_sync_master_timeout=1000
 >重新启动服务
 
 >测试
+
 ```shell
 mastera
 root@localhost:mysql.sock [(none)]>show variables like "%semi%";
