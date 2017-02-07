@@ -1049,3 +1049,202 @@ $cfg['Servers'][$i]['AllowNoPassword'] = false;
 ```
 ![phpmyadmin1](pic/15-phpmyadmin.png)
 
+#### MySQL Workbench 连接数据库
+
+MySQL Workbench 是一款专门为用户提供了用于创建、修改、执行和优化SQL的可视化工具，开发人员可以很轻松的管理数数据。该工具并且提供开发者一整套可视化用于创建、编辑和管理SQL 查询和管理数据库连接。在可视化SQL编辑工作模式下，用户创建表，删除表，修改表信息等只需要使用简单的可编辑列表中完成。
+
+用户通常认为MySQL Workbench 是一个MySQL 数据库ER模型设计的工具，可以说是专门为MySQL数据库提供的数据库设计工具，用户使用MySQL Workbench可以很容易的设计、编辑数据库ER模型。这一功能可以说是MySQL Workbench的一大亮点。
+
+> 软件获取
+
+https://dev.mysql.com/downloads/workbench/
+
+> 软件安装
+
+```shell
+[root@workstation software]# pwd
+/software
+[root@workstation software]# ls mysql-workbench-community-6.3.8-1.el7.x86_64.rpm mysql-workbench-community-6.3.8-1.el7.x86_64.rpm
+[root@workstation software]# rpm -ivh mysql-workbench-community-6.3.8-1.el7.x86_64.rpm 
+warning: mysql-workbench-community-6.3.8-1.el7.x86_64.rpm: Header V3 DSA/SHA1 Signature, key ID 5072e1f5: NOKEY
+error: Failed dependencies:
+	tinyxml is needed by mysql-workbench-community-6.3.8-1.el7.x86_64
+	libzip is needed by mysql-workbench-community-6.3.8-1.el7.x86_64
+	python-paramiko >= 1.15.1 is needed by mysql-workbench-community-6.3.8-1.el7.x86_64
+	proj is needed by mysql-workbench-community-6.3.8-1.el7.x86_64
+	libodbc.so.2()(64bit) is needed by mysql-workbench-community-6.3.8-1.el7.x86_64
+	libodbcinst.so.2()(64bit) is needed by mysql-workbench-community-6.3.8-1.el7.x86_64
+```
+
+需要一些依赖关系包，其中unixODBC和libzip本地yum中有，而tinyxml\python-paramiko\proj需要下载
+
+```shell[root@workstation workbench]# ls
+libtomcrypt-1.17-23.el7.x86_64.rpm        mysql-workbench-community-6.3.8-1.el7.x86_64.rpm
+libtomcrypt-devel-1.17-23.el7.x86_64.rpm  proj-4.8.0-4.el7.x86_64.rpm
+libtomcrypt-doc-1.17-23.el7.noarch.rpm    python2-crypto-2.6.1-13.el7.x86_64.rpm
+libtommath-0.42.0-4.el7.x86_64.rpm        python2-ecdsa-0.13-4.el7.noarch.rpm
+libtommath-devel-0.42.0-4.el7.x86_64.rpm  python2-paramiko-1.16.1-1.el7.noarch.rpm
+libtommath-doc-0.42.0-4.el7.noarch.rpm    tinyxml-2.6.2-3.el7.x86_64.rpm
+[root@workstation workbench]# rpm -ivh libtommath* libtomcrypt* python2-crypto* python2-ecdsa* python2-paramiko* tinyxml* proj* 
+Preparing...                          ################################# [100%]
+	package libtommath-0.42.0-4.el7.x86_64 is already installed
+	package libtomcrypt-1.17-23.el7.x86_64 is already installed
+	package python2-crypto-2.6.1-13.el7.x86_64 is already installed
+	package python2-ecdsa-0.13-4.el7.noarch is already installed
+	package python2-paramiko-1.16.1-1.el7.noarch is already installed
+	package libtomcrypt-devel-1.17-23.el7.x86_64 is already installed
+	package libtommath-devel-0.42.0-4.el7.x86_64 is already installed
+	package proj-4.8.0-4.el7.x86_64 is already installed
+	package tinyxml-2.6.2-3.el7.x86_64 is already installed
+	package libtomcrypt-doc-1.17-23.el7.noarch is already installed
+	package libtommath-doc-0.42.0-4.el7.noarch is already installed
+[root@workstation workbench]# yum install -y unixODBC libzip
+Loaded plugins: langpacks, product-id, search-disabled-repos, subscription-manager
+This system is not registered to Red Hat Subscription Management. You can use subscription-manager to register.
+Package unixODBC-2.3.1-11.el7.x86_64 already installed and latest version
+Package libzip-0.10.1-8.el7.x86_64 already installed and latest version
+Nothing to do
+[root@workstation workbench]# rpm -ivh mysql-workbench-community-6.3.8-1.el7.x86_64.rpm 
+warning: mysql-workbench-community-6.3.8-1.el7.x86_64.rpm: Header V3 DSA/SHA1 Signature, key ID 5072e1f5: NOKEY
+Preparing...                          ################################# [100%]
+Updating / installing...
+   1:mysql-workbench-community-6.3.8-1################################# [100%]
+[root@workstation workbench]# 
+[root@workstation workbench]# rpm -ql mysql-workbench-community |head 
+/usr/bin/mysql-workbench
+/usr/bin/wbcopytables
+/usr/lib64/mysql-workbench
+/usr/lib64/mysql-workbench/libantlr3c_wb.so
+/usr/lib64/mysql-workbench/libcdbc.so
+/usr/lib64/mysql-workbench/libcdbc.so.6.3.8
+/usr/lib64/mysql-workbench/libctemplate.so
+/usr/lib64/mysql-workbench/libctemplate.so.3
+/usr/lib64/mysql-workbench/libctemplate.so.3.0.0
+/usr/lib64/mysql-workbench/libgdal.so.1
+```
+
+> # SQL Development的基本操作
+
+* 创建数据库连接
+* 创建新的数据库
+* 创建和删除新的数据表
+* 添加、修改表记录
+* 查询表记录
+* 修改表结构
+
+> 启动MySQL Workbench
+
+```shell
+[root@workstation ~]# mysql-workbench 
+```
+
+![workbench](pic/33.png)
+
+> MySQL Workbench工作空间下对数据库数据进行管理之前，需要先创建数据库连接
+
+建立连接前，需要在服务器上给MySQL Workbench授权
+
+```shell
+[root@mastera ~]# systemctl start mariadb
+[root@mastera ~]# systemctl stop firewalld
+[root@mastera ~]# mysql
+ERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: NO)
+[root@mastera ~]# mysql -uroot -puplooking
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 3
+Server version: 5.5.44-MariaDB-log MariaDB Server
+
+Copyright (c) 2000, 2015, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [(none)]> grant all on *.* to root@'172.25.0.10' identified by 'uplooking';
+Query OK, 0 rows affected (0.01 sec)
+
+MariaDB [(none)]> flush privileges;
+Query OK, 0 rows affected (0.00 sec)
+```
+
+![workbench](pic/34.png)
+
+> 成功创建数据库连接后，可以创建新的数据库。
+
+![workbench](pic/35.png)
+
+![workbench](pic/36.png)
+
+![workbench](pic/37.png)
+
+![workbench](pic/38.png)
+
+> 成功创建数据库连接后，在左侧的SCHEMAS下面可以看到test数据库。用户可以创建新的数据库，本小节主要创建和删除新的数据表操作。
+
+![workbench](pic/39.png)
+
+![workbench](pic/40.png)
+
+![workbench](pic/41.png)
+
+![workbench](pic/42.png)
+
+
+下面简单介绍MySQL Workbench在图形界面下对数据库表的维护操作。
+
+> 查询t1表中的数据操作。
+
+![workbench](pic/43.png)
+
+> 使用WorkBench操作可以修改表的结构。
+
+![workbench](pic/44.png)
+
+![workbench](pic/45.png)
+
+![workbench](pic/46.png)
+
+> # Data Modeling的基本操作
+
+* 建立ER模型
+* 导入ER模型
+
+![workbench](pic/47.png)
+
+![workbench](pic/48.png)
+
+![workbench](pic/49.png)
+
+![workbench](pic/50.png)
+
+最后 执行 “File”->"Export" 按钮，选择 Forward Engineer SQL CREATE Script (ctrl+shift+G). 这样就可以把模型导出为SQL脚本文件。现在执行这个SQL文件就OK了。
+
+> # Server Administration的基本操作
+
+* 管理MySQL用户
+* 备份MySQL数据库
+* 还原MySQL数据库
+
+> 管理MySQL用户
+
+![workbench](pic/51.png)
+
+> 备份MySQL数据库
+
+![workbench](pic/52.png)
+
+![workbench](pic/53.png)
+
+改备份为逻辑备份，使用的是mysqldump命令进行的，备份数据存放如下：
+
+```shell
+[root@workstation ~]# ls /root/dumps/Dump20170207/
+db1_t1.sql  db1_t2.sql
+```
+
+> 还原MySQL数据库
+
+将db1库中的t1和t2表删除，进行还原
+
+![workbench](pic/54.png)
+
+![workbench](pic/55.png)
+
