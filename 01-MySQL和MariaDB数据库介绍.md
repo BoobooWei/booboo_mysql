@@ -1078,7 +1078,8 @@ error: Failed dependencies:
 
 需要一些依赖关系包，其中unixODBC和libzip本地yum中有，而tinyxml\python-paramiko\proj需要下载
 
-```shell[root@workstation workbench]# ls
+```shell
+[root@workstation workbench]# ls
 libtomcrypt-1.17-23.el7.x86_64.rpm        mysql-workbench-community-6.3.8-1.el7.x86_64.rpm
 libtomcrypt-devel-1.17-23.el7.x86_64.rpm  proj-4.8.0-4.el7.x86_64.rpm
 libtomcrypt-doc-1.17-23.el7.noarch.rpm    python2-crypto-2.6.1-13.el7.x86_64.rpm
