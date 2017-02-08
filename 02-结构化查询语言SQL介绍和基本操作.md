@@ -41,7 +41,7 @@ SQL 语句主要可以划分为以下 4 个类别。
 
 > 学习样例表获取方法
 
-学习样例mysql_scripts.zip存放在uplooking教室共享路径为http://classroom.example.com/content/MYSQL/04-othersmysql_scripts.zip 。
+学习样例mysql_scripts.zip存放在uplooking教室共享路径为http://classroom.example.com/content/MYSQL/04-others/mysql_scripts.zip 。
 
 可以在连接互联网的情况下，访问http://www.forta.com/books/0672327120/
 
@@ -2811,6 +2811,7 @@ MariaDB [test]> select order_num,sum(quantity*item_price) as ordertotal from ord
 下面回顾一下 SELECT 语句中子句的顺序。下表以在 SELECT 语句中使用时必须遵循的次序,列出迄今为止所学过的子句。
 
 |SELECT子句|说明|是否必须使用|
+|:--|:--|:--|
 |SELECT|要返回的列或表达式|是|
 |FROM|从中检索数据的表|仅在从表选择数据时使用|
 |WHERE|行级过滤|否|
