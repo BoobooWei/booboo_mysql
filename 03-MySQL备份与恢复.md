@@ -695,7 +695,7 @@ MariaDB [(none)]> exit
 
 > 查看软件架构
 
-* 软件名		percona-xtrabackup
+* 软件名	percona-xtrabackup
 * 命令		innobackupex
 * 选项
 	--user=name		用户名
