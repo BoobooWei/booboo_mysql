@@ -46,7 +46,7 @@
 除了双主配置,还有其他与复制无关的高可用性技术,如使用共享存储或复制磁盘。尽管它们不是 MySQL 特有的,但这些技术对于保证高可用性来说也是很重要的工具
 
 
-#### 复制解决的问题
+### 复制解决的问题
 
 > 复制用例:
 
@@ -66,7 +66,7 @@
 
 还可以审查服务器上的查询。例如,查看某些查询是否有性能问题,以及服务器是否由于某个糟糕的查询而不同步。
 
-#### 复制的原理
+### 复制的原理
 
 在详细介绍如何设置复制之前，让我门先看看MySQL实际上时如何复制数据的。总的来说，复制有三个步骤：
 
@@ -78,60 +78,9 @@
 
 ![replication-how](pic/23-replication-how.png)
 
-#### 复制中的延迟问题
+#### 项目实战1：mariadb server 5.5 单主从架构
 
-> 重演延迟
-
-* mysql5.5之前没有解决方案——主服务器100个线程，从服务器1个线程重演
-* mysql5.6（mariadb10）开始——主服务器一个库，从服务器一个线程
-* mysql5.7（mariadb10.1）真正解决了——从服务器可以自定义线程数量（按照sql语句组来实现，10个为一组，一个线程）,gtid区分sql的依赖关系
-
-> 读写分离
-
-![rep1](pic/26-rep4.png)
-
-主服务器写入，同步到从服务器，在从服务器中读取数据，一般一台主服务器，多台从服务器(5.7版本以后支持多master，之前都是一个master )
-
-![rep2](pic/24-rep1.png)
-
-#### 复制中的单点故障问题
-
-*MySQL 5.7 开始支持多主库复制* 多主库复制（multisource replication）特指一个备库有多个主库。5.7开始支持的，意味着5.7之前的版本不支持。
-
-![rep3](pic/24-rep2.png)
-
-![rep4](pic/25-rep3.png)
-
-#### 复制拓扑
-
-有很多复杂的拓扑结构，但即使是最简单的也可能会非常灵活。一种拓扑可以有多种用途。
-
-接下来我们讨论一些比较普遍的拓扑结构以及它们的优缺点。记住下面的基本原则：
-
-* 每个备库必须有一个唯一的服务器ID
-* 一个主库可以有多个备库
-* mysql5.7开始一个备库可以有多个主库(multisource replication)
-* 如果打开了log_save_updates选项，一个备库可以把其主库上的数据变化传播到其他备库
-
----
-
-##### 配置M-S-S
-
-一主库多备库的结构，备库之间没有交互，它们仅仅是连接到同一个主库上。
-
-![rep5](pic/26-rep5.png)
-
-尽管这是非常简单的拓扑结构，但它非常灵活，能满足多种需求。
-
-*用途：*
-
-* 为不同的角色使用不同的备库（例如添加不同的索引或使用不同的存储引擎）。
-* 把一台备库当作待用的主库，除了复制没有其他数据传输。
-* 将一台备库放到远程数据中心，用作灾难恢复。
-* 延迟一个或多个备库，以备灾难恢复。
-* 使用其中一个备库，作为备份、培训或者测试使用服务器。
-
-*优点* ：避免了很多其他拓扑结构的复杂性。
+![62](pic/62.jpg)
 
 *单主从步骤*
 
@@ -154,7 +103,6 @@
 	6)> show slave status\G;
 ~~~
 
-> 实战项目1：实现mariadb 5.5 MySQL AB 复制 M-S 部署
 
 ```shell
 ## 主服务器
@@ -312,9 +260,117 @@ MariaDB [(none)]> \q
 Bye
 ```
 
----
+![](pic/63.jpg)
 
-##### 配置M-M
+#### 项目实战2：mysql server 5.7 基于GTID的单主从架构
+
+![](pic/64.jpg)
+
+|server|ip|software|rule|
+|:--|:--|:--|:--|
+|masterb|172.25.0.12|mysql-server 5.7|master|
+|slaveb|172.25.0.14|mysql-server 5.7|slave|
+
+配置文件如下：
+
+```shell
+Master:
+[mysqld]
+server-id=1
+log-bin=/var/lib/mysql-log/mastera
+gitd_mode=on
+enforce_gtid_consistency=1
+
+Slave:
+[mysqld]
+server-id=2
+gtid_mode=on
+enforce_gtid_consistency=1
+```
+
+其他步骤与项目实践类似，再次不再赘述
+
+![](pic/65.jpg)
+
+
+### 复制中的延迟问题_重演延迟
+
+- mysql5.5之前没有解决方案——单线程
+- mysql5.6（mariadb10）开始——一库一线程
+- mysql5.7（mariadb10.1）真正解决了——一组一线程
+
+![](pic/32.png)
+
+#### 项目实战3：mysql server 5.7 基于GTID的并行MTS单主从架构
+
+![](pic/66.jpg)
+
+MTS参数是在slave上设置：
+slave-parallel-type=logical_clock
+slave-parallel-workers=16
+
+salve-parallel-type的选项有：
+1. logical_clock	一组一线程
+2. database 一库一线程
+
+#### 项目实战4：mysql server 5.7 基于GTID的并行MTS单主从架构crash safe参数调优
+
+Master
+sync_binlog=1 #强制刷新binlog到磁盘
+innodb_flush_log_at_trx_commit=1 #强制刷新redolog到磁盘
+
+Slave
+relay_log_recovery=1 #如果slave的中继日志出问题，能够再次自动获取master的二进制日志
+
+
+### 复制中的延迟问题_读写分离
+
+![rep1](pic/26-rep4.png)
+
+主服务器写入，同步到从服务器，在从服务器中读取数据，一般一台主服务器，多台从服务器(5.7版本以后支持多master，之前都是一个master )
+
+![](pic/30.png)
+
+![rep2](pic/24-rep1.png)
+
+
+#### 项目实战5：mysql server 5.7 基于GTID的并行MTS单主从半同步架构
+
+![](pic/31.png)
+
+
+### 复制中的单点故障问题
+
+#### 复制拓扑_配置M-S-S
+
+有很多复杂的拓扑结构，但即使是最简单的也可能会非常灵活。一种拓扑可以有多种用途。
+
+接下来我们讨论一些比较普遍的拓扑结构以及它们的优缺点。记住下面的基本原则：
+
+* 每个备库必须有一个唯一的服务器ID
+* 一个主库可以有多个备库
+* mysql5.7开始一个备库可以有多个主库(multisource replication)
+* 如果打开了log_save_updates选项，一个备库可以把其主库上的数据变化传播到其他备库
+
+
+一主库多备库的结构，备库之间没有交互，它们仅仅是连接到同一个主库上。
+
+![rep5](pic/26-rep5.png)
+
+尽管这是非常简单的拓扑结构，但它非常灵活，能满足多种需求。
+
+*用途：*
+
+* 为不同的角色使用不同的备库（例如添加不同的索引或使用不同的存储引擎）。
+* 把一台备库当作待用的主库，除了复制没有其他数据传输。
+* 将一台备库放到远程数据中心，用作灾难恢复。
+* 延迟一个或多个备库，以备灾难恢复。
+* 使用其中一个备库，作为备份、培训或者测试使用服务器。
+
+*优点* ：避免了很多其他拓扑结构的复杂性。
+
+
+#### 复制拓扑_配置M-M
 
 *主主复制（也叫做双主复制或双向复制）* 包含两台服务器，每一个都被配置成对方的主库和备库，还句话说，它们是一对主库。
 
@@ -351,7 +407,7 @@ mastera masterb
 	5)测试
 ~~~
 
-> 实战项目2：实现 mariadb 5.5 MySQL AB 复制 M-M部署
+> 实现 mariadb 5.5 MySQL AB 复制 M-M部署
 
 ```shell
 # 双主从
@@ -512,7 +568,7 @@ MariaDB [(none)]>
 
 ---
 
-##### 配置M-M-S-S
+#### 复制拓扑_配置M(s)-M(s) 
 
 *拥有备库的主-主结构* 为每个主库增加一个备库。
 
@@ -523,15 +579,16 @@ MariaDB [(none)]>
 如果在本地为了故障转移使用主-主结构，这种配置同样有用。当主库失效时，用备库来代替主库还是可行的，虽然这优点复杂，同样也库一把备库指向一个不同的主库，但需要考虑增加的复杂度。
 
 
----
 
-##### 基于GTIDs的MySQL MultiSource Replication M-M-S-S
-
-![rep8](pic/20-ab-replication.jpg)
+#### 复制拓扑_配置M-M-S-S
 
 *MySQL 5.7 开始支持多主库复制* 多主库复制（multisource replication）特指一个备库有多个主库。5.7开始支持的，意味着5.7之前的版本不支持。
 
-因此这里我们安装mysql5.7来完成该拓扑。
+
+##### 项目实战6：mysql server 5.7 基于GTID的并行MTS多级主从 Multisource 半同步架构
+
+![](pic/70.png)
+
 
 |服务器|		ip|		功能|		软件|
 |:--|:--|:--|:--|
@@ -589,19 +646,30 @@ mysqladmin -uroot -p'' password '(Uploo00king)'
 
 mysql.user表的结构变化了，原先的password列改为了authentication_string列
 
+>> 实现半同步，需要先安装半同步插件
 
-> M-M-S-S步骤
+> ### M-M-S-S步骤
 
 >> 主服务器
 
 1. configure  
-~~~
+
+```shell
+[mysqld]
+server-id=1
 log-bin=/var/lib/mysql-log/mastera
-server-id=1(或2)
-# master_log_file master_log_pos===>master_auto_position=1
-gtid_mode = ON
-enforce_gtid_consistency = 1
-~~~
+# GTID
+gitd_mode=on
+enforce_gtid_consistency=1
+# crash safe
+sync_binlog=1 #强制刷新binlog到磁盘
+innodb_flush_log_at_trx_commit=1 #强制刷新redolog到磁盘
+# semi sync
+rpl-semi_sync_master_enable=1
+rpl_semi_sync_master_timeout=1000 #ms
+rpl_semi_sync_master_warit_slave_count=num
+```
+
 2. grant replication slave@'172.25.X.%'
 
 3. mysqldump\tar\lvm\innobackupex
@@ -609,14 +677,21 @@ enforce_gtid_consistency = 1
 >> 从服务器
 
 1. configure
-~~~
-server-id=3
-server-id=4
-gtid_mode = ON
-enforce_gtid_consistency = 1
-master-info-repository = TABLE
-relay-log-info-repository = TABLE
-~~~
+
+```shell
+[mysqld]
+Server-id=2
+# GTID
+gtid_mode=on
+enforce_gtid_consistency=1
+# MTS
+slave-parallel-type=logical_clock
+Slave-parallel-workers=16
+# crash safe
+relay_log_recovery=1
+# semi sync
+rpl_semi_sync_slave_enable=1
+```
 
 2. mysql -uroot -p'(Uploo00king)' < mysql.all.sql
 
@@ -1162,32 +1237,6 @@ mastera slavea slaveb都同步了数据库
 
 关闭mastera的数据，对masterb写，slavea和slaveb也能同步数据；再次打开mastera也能同步到数据。
 
-### 实战项目
-
-> 实战项目1：总结MySQL AB复制的原理
-
-> 实战项目2：脚本实现mariadb 5.5 MySQL AB 复制 M-S-S 部署
-
-> 实战项目3：实现MySQL 5.7 多级主从+MultiSource的部署
-
-> 实战项目4：破解 MySQL 5.7 的root密码
-
->> 修改配置文件/etc/my.cnf
-
-添加一个选项 skip-grant-tables
-
-重新启动服务
-
-```shell
-# vim /etc/my.cnf
-[mysqld]
-skip-grant-tables
-
-# systemctl restart mysqld
-
-# mysql
->alter user root@localhost identified by "U:pl:oo00king:" ;
-```
 
 ### 总结
 
