@@ -1,5 +1,7 @@
 ## 高可用性HA
 
+[TOC]
+
 ### 什么是高可用
 
 高可用性实际上有点像神秘的野兽。它通常是以百分比表示，这本身也是一种暗示：高可用性不是绝对的，只有相对更高的可用性。100%的可用性是不可能达到的。可用性的“9”规则是表示可用性目标最普遍的方法。你可能也知道，“5个9”表示99.999%的正常可用时间。换句话说，每年只允许5分钟的宕机时间。对于大多数应用这已经是令人惊叹的数字，尽量还有一些人试图获得更多的“9”。
@@ -54,7 +56,44 @@ MySQL 中的同步复制首先出现在MySQL Clushter （NDB Cluster）。它在
 
 现在至少有两个为简化集群部署和管理提供附加产品的供应商：Oracle 针对 MySQL Cluster 的服务支持包含了 MySQL Cluster Manager 工具；Serveralines 提供了Cluster Control工具，该工具还能够帮助部署和管理复制集群。
 
-##### Galera MySQL 集群
+##### Galera Cluster 集群
+
+MariaDB作为Mysql的一个分支，在开源项目中已经广泛使用，例如大热的openstack，所以，为了保证服务的高可用性，同时提高系统的负载能力，集群部署是必不可少的。
+ 
+MariaDB Galera Cluster 介绍
+
+MariaDB集群是MariaDB同步多主机集群。它仅支持XtraDB/ InnoDB存储引擎（虽然有对MyISAM实验支持 - 看wsrep_replicate_myisam系统变量）。
+
+主要功能:
+
+- 同步复制
+- 真正的multi-master，即所有节点可以同时读写数据库
+- 自动的节点成员控制，失效节点自动被清除
+- 新节点加入数据自动复制
+- 真正的并行复制，行级
+- 用户可以直接连接集群，使用感受上与MySQL完全一致
+
+优势:
+
+- 因为是多主，所以不存在Slavelag(延迟)
+- 不存在丢失事务的情况
+- 同时具有读和写的扩展能力
+- 更小的客户端延迟
+- 节点间数据是同步的,而Master/Slave模式是异步的,不同slave上的binlog可能是不同的
+
+技术:
+
+Galera集群的复制功能基于Galeralibrary实现,为了让MySQL与Galera library通讯，特别针对MySQL开发了wsrep API。
+
+Galera插件保证集群同步数据，保持数据的一致性，靠的就是可认证的复制，工作原理如下图：
+
+![](pic/14-Galera Cluster.png)
+
+当客户端发出一个commit的指令，在事务被提交之前，所有对数据库的更改都会被write-set收集起来,并且将 write-set 纪录的内容发送给其他节点。
+
+write-set 将在每个节点进行认证测试，测试结果决定着节点是否应用write-set更改数据。
+
+如果认证测试失败，节点将丢弃 write-set ；如果认证测试成功，则事务提交。
 
 > 软件的获取
 
@@ -225,7 +264,7 @@ MariaDB [(none)]> show global status like 'wsrep_cluster%';
 * 2.2：防止从机单点故障，增加一台slaveb
 * 2.3：如果 master 是单点故障,如何解决？多级主从 multi-source，两个主服务器，两个从服务器，作multi-source,如果一台主服务器宕掉了，那么从服务器会自动去找第二台主服务器。
 
-##### 问题的提出
+#### 问题的提出
 
 **两台master是否都能连呢？**
 

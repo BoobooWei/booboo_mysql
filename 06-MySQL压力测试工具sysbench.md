@@ -32,6 +32,9 @@ libtoolize: putting auxiliary files in AC_CONFIG_AUX_DIR, `config'.
 libtoolize: copying file `config/ltmain.sh'
 libtoolize: putting macros in AC_CONFIG_MACRO_DIR, `m4'.
 此处省略... ...
+
+[root@localhost sysbench-master]# ./configure
+此处省略... ...
 ===============================================================================
 sysbench version   : 1.0
 CC                 : gcc

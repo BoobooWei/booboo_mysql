@@ -5,8 +5,8 @@
 | role   | server  | ip          |
 | :----- | :------ | :---------- |
 | master | mastera | 172.25.0.11 |
-| slave  | masterb | 172.25.5.12 |
-| slave  | slavea  | 172.25.5.13 |
+| slave  | masterb | 172.25.0.12 |
+| slave  | slavea  | 172.25.0.13 |
 
 ## 安装二进制的mysql5.6
 

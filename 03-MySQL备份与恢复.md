@@ -7,6 +7,22 @@
 
 服务器维护的工作永远都有一个不变的主题,那就是备份。正所谓,手里有粮,心里不慌。从事数据库相关工作一样永远都不要忘记一个重点:备份。因为,有了备份,我们就什么都不怕。出了任何问题(当然,我们善意的希望永远不要出什么问题),只要我们手上有完整的备份,那就有机会恢复回来。
 
+![](pic/59.jpg)
+
+2017年 1 月 31 日晚上恐怕是知名程序源码代管服务网站 GitLab 最长的一夜，因为一位工程师的疏忽造成大量资料流失，而又发现所有备份方案都无效而崩溃。
+
+![](pic/60.png)
+
+300GB 的资料被删到只剩下 4.5GB。而最后一个潜在可用的备份是 6 小时前手动操作的，一时之间连网站都连不进去了。根据该公司 Google docs 的维护纪录在最新的讯息提到：“这个事件影响了网站数据库（包括 issue 问题和 merge requests 合并请求），但不影响 git repos（git 版本管控档案库和 wiki 服务）。”
+
+由于不是所有资料都遗失了，所以对用户来说还是稍感安慰，但是该文件在“遇到的问题”（Problems Encountered）小节里，最后总结：
+
+“因此，换句话说，部署的 5 个不同备份／还原技术中，没有一个能可靠地工作或第一时间还原回来，我们只能从 6 小时前有效的备份还原。”
+
+亡羊补牢为时不晚，GitLab 展现诚意以 YouTube 直播与 Twitter 将讯息公诸于网络，但是看来 GitLab 必须非常努力，才能挽回客户与投资者对该公司的信心。对其他依赖资讯科技的公司而言，相信这也是很好的借镜。
+
+![](pic/61.jpg)
+
 ### 什么是备份
 
 备份已经成为所有DBA的必修科目，到底什么是备份恢复呢？简单的讲：备份，就是把数据保存一份备用；恢复，就是把保存的数据还原回去。
@@ -39,7 +55,7 @@
 2. 冷备的分类：
 	- 物理备份、逻辑备份
 	- 完全备份、增量备份
-  - 在线（热）备份、温备份、离线（冷）备份
+    - 在线（热）备份、温备份、离线（冷）备份
 
 #### 物理备份和逻辑备份
 
@@ -159,7 +175,7 @@
 - 5）测试	  > select * from db1.t1;
 
 
-##### * 课堂实战1: 利用tar实现物理备份并还原 *
+##### 课堂实战1: 利用tar实现物理备份并还原
 
 ```shell
 # 备份
@@ -198,7 +214,7 @@ id
 
 #### LVM SnapShot
 
-##### * lvm快照的优点和缺点 *
+##### lvm快照的优点和缺点
 
 事实上,MySQL 数据库的备份是一个让管理员一直很头疼的问题。各种工作
 虽 然 不 少 ,但是 各 有优 劣 , 想找 到一个 比较 完 美 的方 法 却 非常 困 难 。
@@ -256,7 +272,7 @@ LV,并且将其挂载到 MySQL 的数据文件目录上。在这个例子中,你
 
 /dev/vdb---fdisk---/dev/vdb1 1G--pv--vg--lv--->mkfs.ext4--->目录树
 
-##### * os支持lvm方式 lv1---/var/lib/mysql *
+##### os支持lvm方式 lv1---/var/lib/mysql
 
 ```
 	1)fdisk
@@ -271,7 +287,7 @@ LV,并且将其挂载到 MySQL 的数据文件目录上。在这个例子中,你
 	10)启动服务
 ```
 
-##### * lvm快照备份数据 *
+##### lvm快照备份数据
 
 ```
 # 与数据库服务相关的操作
@@ -286,7 +302,7 @@ LV,并且将其挂载到 MySQL 的数据文件目录上。在这个例子中,你
 	7)删除快照	lvremove /dev/vgmysql/snap1
 ```
 
-##### * lvm快照还原数据 *
+##### lvm快照还原数据
 
 ```
 	1）停止服务 systemctl stop mariadb
@@ -296,7 +312,7 @@ LV,并且将其挂载到 MySQL 的数据文件目录上。在这个例子中,你
 	5）测试	  > select * from db1.t1;
 ```
 
-##### * 课堂实战2: 利用LVM快照实现物理备份并还原 *
+##### 课堂实战2: 利用LVM快照实现物理备份并还原
 
 ```shell
 # lv1-->/var/lib/mysql
@@ -536,14 +552,14 @@ id
 件的物理 cp,备份和恢复时间都比较短,但是备份的文件在不同的平台上不一定兼容。
 其中,mysqldump 是最常用的逻辑备份工具,适合各种存储引擎,希望大家重点掌握。
 
-##### * MyISAM和INNODB表的备份 *
+##### MyISAM和INNODB表的备份
 
 |存储引擎|数据一致|服务可用|实现方式|
 |:--|:--|:--|:--|
 |MYISAM	|ok	|no	|锁表|
 |INNODB|ok|	ok	|MVCC|
 
-##### * mysqldump命令的用法 *
+##### mysqldump命令的用法
 
 ```
 	mysqldump 备份数据---逻辑备份sql语句
@@ -556,12 +572,12 @@ id
 	mysqldump -uroot -puplooking -A --lock-all-tables > /tmp/mysql.xxx.sql
 ```
 
-##### * mysqldump备份步骤 *
+##### mysqldump备份步骤
 
 	INNODB	mysqldump -uroot -puplooking -A --single-transaction > /tmp/mysql.201608301600.sql
 	MYISAM	mysqldump -uroot -puplooking -A --lock-all-tables > /tmp/mysql.xxx.sql
 
-##### * mysqldump还原步骤 *
+##### mysqldump还原步骤
 
 ```
 	1）停止服务
@@ -573,7 +589,7 @@ id
 
 ```
 
-##### * 课堂实战3: 利用mysqldump实现逻辑备份并还原 *
+##### 课堂实战3: 利用mysqldump实现逻辑备份并还原
 
 ```shell
 [root@mastera0 ~]# mysqldump -uroot -puplooking -A --single-transaction > /tmp/mysql.all.1.sql
@@ -750,7 +766,7 @@ MariaDB [(none)]> exit
 ~~~
 
 
-##### * 课堂实战4：innobackupex实时增量备份和还原 *
+##### 课堂实战4：innobackupex实时增量备份和还原
 
 ```shell
 ## install
@@ -1713,7 +1729,7 @@ MySQL复制也使用二进制日志。因此备份和恢复的策略经常和复
 
 经常备份二进制日志是个好注意。如果不能承受丢失超过30分钟数据的价值，至少要每30分钟就备份一次。也可以用一个配置`--log_slave_update`的只读备库，这样可以获得额外的安全性。备库上日志位置与主库不匹配，但找到恢复时正确的位置并不难。最后，从mysql5.6版本开始`mysqlbinlog`有一个非常方便的特性，可连接到服务器上来实现二进制日志做镜像，比起运行`mysqld`实例要简单和轻便。它与老版本时向后兼容的。
 
-##### * 如何打开二进制日志 *
+##### 如何打开二进制日志
 
 ```
 	1)configure	修改配置文件/etc/my.cnf
@@ -1723,7 +1739,7 @@ MySQL复制也使用二进制日志。因此备份和恢复的策略经常和复
 	5)restart mariadb 重启服务
 ```
 
-##### * 如何查看二进制日志 *
+##### 如何查看二进制日志
 
 	index	日志的索引
 	000001	日志
@@ -1782,7 +1798,7 @@ mysqlbinlog --stop-datetime="2016-08-31 11:19:12"
 
 ![mysqlbinlog](pic/18-mysqlbinlog1.emf.png)
 
-##### * 数据库备份恢复模拟一 *
+##### 数据库备份恢复模拟一
 
 ```
 	1)11:00 mysqldump db1.t1 1 2 3 4 5 6
@@ -1808,7 +1824,7 @@ mysqlbinlog --stop-datetime="2016-08-31 11:19:12"
 	10)全备份	mysqldump -uroot -puplooking -A --single-transaction --master-data=2 --flush-logs > /tmp/mysql.12.mysql
 ```
 
-##### * 数据库备份恢复模拟二 *
+##### 数据库备份恢复模拟二
 
 ```
 	1)12:00 mysqldump db1.t1 3 4 5 6 7 8 9 10
@@ -1829,7 +1845,7 @@ mysqlbinlog --stop-datetime="2016-08-31 11:19:12"
 ```
 ![mysqlbinlog3](pic/19-mysqlbinlog2.emf.png)
 
-##### * 数据库备份恢复模拟三 *
+##### 数据库备份恢复模拟三
 
 ```
 	1)14:00 	mysqldump db1.t1 3 4 5 6 7 8 9 10 11 12 db2.t1
@@ -1844,7 +1860,7 @@ mysqlbinlog --stop-datetime="2016-08-31 11:19:12"
 			stop  at 430	at 785	at 1136
 ```
 
-##### * 课堂实战5：基于二进制日志时间点和位置的数据库备份恢复模拟 *
+##### 课堂实战5：基于二进制日志时间点和位置的数据库备份恢复模拟
 ```shell
 # 打开二进制日志 open binlog
 [root@mastera0 ~]# setenforce 0

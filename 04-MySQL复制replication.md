@@ -303,15 +303,90 @@ enforce_gtid_consistency=1
 
 #### 项目实战3：mysql server 5.7 基于GTID的并行MTS单主从架构
 
+MySQL 5.7才可称为真正的并行复制，这其中最为主要的原因就是slave服务器的回放与主机是一致的即master服务器上是怎么并行执行的slave上就怎样进行并行回放。
+
+MTS: Prepared transactions slave parallel applier 
+
+该并行复制的思想最早是由MariaDB的Kristain提出，并已在MariaDB 10中出现，相信很多选择MariaDB的小伙伴最为看重的功能之一就是并行复制。
+
+MySQL 5.7并行复制的思想简单易懂，一言以蔽之：一个组提交的事务都是可以并行回放，因为这些事务都已进入到事务的prepare阶段，则说明事务之间没有任何冲突（否则就不可能提交）。
+
+
+> #### 设置重演模式`slave-parallel-type`
+
+为了兼容MySQL 5.6基于库的并行复制，5.7引入了新的变量`slave-parallel-type`，其可以配置的值有：
+
+* DATABASE：默认值，基于库的并行复制方式
+* LOGICAL_CLOCK：基于组提交的并行复制方式
+
+
+支持并行复制的GTID
+
+last_committed
+
+sequence_number
+
+并行复制配置与调优
+master_info_repository
+
+> #### 设置重演线程数`slave_parallel_workers`
+
+* slave_parallel_workers设置为0，则MySQL 5.7退化为原单线程复制
+* slave_parallel_workers设置为1，则SQL线程功能转化为coordinator线程，但是只有1个worker线程进行回放，也是单线程复制。然而，这两种性能却又有一些的区别，因为多了一次coordinator
+线程的转发，因此slave_parallel_workers=1的性能反而比0还要差
+
+> #### Enhanced Multi-Threaded Slave配置总结
+
+```shell
+# slave
+slave-parallel-type=LOGICAL_CLOCK
+slave-parallel-workers=16
+master_info_repository=TABLE
+relay_log_info_repository=TABLE
+relay_log_recovery=ON
+```
+
 ![](pic/66.jpg)
 
-MTS参数是在slave上设置：
-slave-parallel-type=logical_clock
-slave-parallel-workers=16
+> #### 软件安装
 
-salve-parallel-type的选项有：
-1. logical_clock	一组一线程
-2. database 一库一线程
+|host|ip|software|
+|:--|:--|:--|
+|masterb|	172.25.0.12|	mysql-community-server-5.7|
+|slaveb|	172.25.0.14|	mysql-community-server-5.7|
+
+
+> #### 配置文件
+
+```shell
+## master
+	[mysqld]
+	# AB replication
+	server-id=1
+	log-bin=/var/lib/mysql-log/masterb
+
+	# GTID
+	gtid_mode=on
+	enforce_gtid_consistency=1
+
+
+
+## slave
+	[mysqld]
+	# AB replication
+	server-id=2
+
+	# open gtid mode
+	gtid_mode=on
+	enforce_gtid_consistency=1
+
+	# MTS 一组一线程
+	slave-parallel-type=logical_clock
+	slave-parallel-workers=16
+```
+
+> #### 总结
+MySQL 5.7推出的Enhanced Multi-Threaded Slave解决了困扰MySQL长达数十年的复制延迟问题
 
 #### 项目实战4：mysql server 5.7 基于GTID的并行MTS单主从架构crash safe参数调优
 
@@ -321,6 +396,46 @@ innodb_flush_log_at_trx_commit=1 #强制刷新redolog到磁盘
 
 Slave
 relay_log_recovery=1 #如果slave的中继日志出问题，能够再次自动获取master的二进制日志
+
+> #### 配置文件
+
+```shell
+## master
+	[mysqld]
+	# AB replication
+	server-id=1
+	log-bin=/var/lib/mysql-log/masterb
+
+	# GTID
+	gtid_mode=on
+	enforce_gtid_consistency=1
+
+	# crash safe
+	sync_binlog=1
+	innodb_flush_log_at_trx_commit=1
+
+
+## slave
+	[mysqld]
+	# AB replication
+	server-id=2
+
+	# open gtid mode
+	gtid_mode=on
+	enforce_gtid_consistency=1
+
+	# slave crash
+	relay_log_recovery=1
+
+
+	# MTS 一组一线程
+	slave-parallel-type=logical_clock
+	slave-parallel-workers=16
+```
+
+> ## 总结
+
+crash safe 打开后能够更好的保证在数据库出现断电等特殊情况下，数据尽可能地少丢失！
 
 
 ### 复制中的延迟问题_读写分离
@@ -333,10 +448,265 @@ relay_log_recovery=1 #如果slave的中继日志出问题，能够再次自动�
 
 ![rep2](pic/24-rep1.png)
 
+从MySQL5.5开始，MySQL以插件的形式支持半同步复制。
+
+
+异步复制（Asynchronous replication）
+
+MySQL默认的复制即是异步的，主库在执行完客户端提交的事务后会立即将结果返给给客户端，并不关心从库是否已经接收并处理，这样就会有一个问题，主如果crash掉了，此时主上已经提交的事务可能并没有传到从上，如果此时，强行将从提升为主，可能导致新主上的数据不完整。
+
+ 
+
+全同步复制（Fully synchronous replication）
+
+指当主库执行完一个事务，所有的从库都执行了该事务才返回给客户端。因为需要等待所有从库执行完该事务才能返回，所以全同步复制的性能必然会收到严重的影响。
+
+ 
+
+半同步复制（Semisynchronous replication）
+
+介于异步复制和全同步复制之间，主库在执行完客户端提交的事务后不是立刻返回给客户端，而是等待至少一个从库接收到并写到relay log中才返回给客户端。相对于异步复制，半同步复制提高了数据的安全性，同时它也造成了一定程度的延迟，这个延迟最少是一个TCP/IP往返的时间。所以，半同步复制最好在低延时的网络中使用。
+
+
+#### 半同步复制的潜在问题
+
+客户端事务在存储引擎层提交后，在得到从库确认的过程中，主库宕机了，此时，可能的情况有两种
+
+ 
+
+1.事务还没发送到从库上
+
+
+此时，客户端会收到事务提交失败的信息，客户端会重新提交该事务到新的主上，当宕机的主库重新启动后，以从库的身份重新加入到该主从结构中，会发现，该事务在从库中被提交了两次，一次是之前作为主的时候，一次是被新主同步过来的。
+
+ 
+
+2.事务已经发送到从库上
+
+
+此时，从库已经收到并应用了该事务，但是客户端仍然会收到事务提交失败的信息，重新提交该事务到新的主上。
+
+ 
+
+#### 无数据丢失的半同步复制
+
+
+针对上述潜在问题，MySQL 5.7引入了一种新的半同步方案：Loss-Less半同步复制。
+
+ 
+
+当然，之前的半同步方案同样支持，MySQL 5.7.2引入了一个新的参数进行控制-`rpl_semi_sync_master_wait_point`
+
+rpl_semi_sync_master_wait_point有两种取值
+
+ 
+
+`AFTER_SYNC` 这个即新的半同步方案，Waiting Slave dump在Storage Commit之前。
+
+`AFTER_COMMIT` 老的半同步方案
+
+ 
+
 
 #### 项目实战5：mysql server 5.7 基于GTID的并行MTS单主从半同步架构
 
-![](pic/31.png)
+
+
+要想使用半同步复制，必须满足以下几个条件：
+
+1. MySQL 5.5及以上版本
+
+2. 变量have_dynamic_loading为YES
+
+3. 异步复制已经存在
+
+![31.png](pic/31.png)
+
+> #### 安装插件
+
+```shell
+mysql> install plugin rpl_semi_sync_master soname 'semisync_master.so';
+Query OK, 0 rows affected (0.10 sec)
+
+mysql> install plugin rpl_semi_sync_slave soname 'semisync_slave.so';
+Query OK, 0 rows affected (0.05 sec)
+```
+
+> #### 配置文件
+
+```shell
+## master
+	[mysqld]
+	# AB replication
+	server-id=1
+	log-bin=/var/lib/mysql-log/masterb
+
+	# GTID
+	gtid_mode=on
+	enforce_gtid_consistency=1
+
+	# crash safe
+	sync_binlog=1
+	innodb_flush_log_at_trx_commit=1
+
+	# 半同步模式
+	rpl_semi_sync_master_enabled=1
+	rpl_semi_sync_master_timeout=1000
+
+## slave
+	[mysqld]
+	# AB replication
+	server-id=2
+
+	# open gtid mode
+	gtid_mode=on
+	enforce_gtid_consistency=1
+
+	# slave crash
+	relay_log_recovery=1
+
+	# MTS 一组一线程
+	slave-parallel-type=logical_clock
+	slave-parallel-workers=16
+
+	# 半同步模式
+	rpl_semi_sync_slave_enabled=1
+```
+
+> #### 测试半同步复制超时后自动切换回异步模式
+
+
+```shell
+mysql> create database db1;
+Query OK, 1 row affected (0.06 sec)
+
+mysql> create table db1.t1 (id int);
+Query OK, 0 rows affected (0.26 sec)
+
+mysql> insert into db1.t1 values (1);
+Query OK, 1 row affected (0.23 sec)
+# 将slave关闭后再执行以下操作
+mysql> insert into db1.t1 values (2);
+Query OK, 1 row affected (1.19 sec)
+
+mysql> insert into db1.t1 values (3);
+Query OK, 1 row affected (0.36 sec)
+
+mysql> insert into db1.t1 values (4);
+Query OK, 1 row affected (0.08 sec)
+```
+
+如果从机想回到半异步模式，需要重启slave，否则默认还是异步复制。
+
+
+> #### 监控主从是否运行在半同步复制模式下
+
+* `show status like 'rpl_semi_sync_master_status';`
+* `show status like 'rpl_semi_sync_slave_status';`
+
+
+> #### 环境变量
+
+```shell
+mysql> show variables like '%Rpl%';
++-------------------------------------------+------------+
+| Variable_name                             | Value      |
++-------------------------------------------+------------+
+| rpl_semi_sync_master_enabled              | ON         |
+| rpl_semi_sync_master_timeout              | 10000      |
+| rpl_semi_sync_master_trace_level          | 32         |
+| rpl_semi_sync_master_wait_for_slave_count | 1          |
+| rpl_semi_sync_master_wait_no_slave        | ON         |
+| rpl_semi_sync_master_wait_point           | AFTER_SYNC |
+| rpl_stop_slave_timeout                    | 31536000   |
++-------------------------------------------+------------+
+7 rows in set (0.30 sec)
+```
+
+`rpl_semi_sync_master_wait_for_slave_count`
+
+MySQL 5.7.3引入的，该变量设置主需要等待多少个slave应答，才能返回给客户端，默认为1。
+
+ 
+
+`rpl_semi_sync_master_wait_no_slave`
+
+ON
+
+默认值，当状态变量Rpl_semi_sync_master_clients中的值小于rpl_semi_sync_master_wait_for_slave_count时，Rpl_semi_sync_master_status依旧显示为ON。
+
+OFF
+
+当状态变量Rpl_semi_sync_master_clients中的值于rpl_semi_sync_master_wait_for_slave_count时，Rpl_semi_sync_master_status立即显示为OFF，即异步复制。
+
+说得直白一点，如果我的架构是1主2从，2个从都采用了半同步复制，且设置的是rpl_semi_sync_master_wait_for_slave_count=2，如果其中一个挂掉了，对于rpl_semi_sync_master_wait_no_slave设置为ON的情况，此时显示的仍然是半同步复制，如果rpl_semi_sync_master_wait_no_slave设置为OFF，则会立刻变成异步复制。
+
+ 
+
+> #### 状态变量
+
+```shell
+mysql> show status like '%Rpl_semi%';
++--------------------------------------------+-------+
+| Variable_name                              | Value |
++--------------------------------------------+-------+
+| Rpl_semi_sync_master_clients               | 1     |
+| Rpl_semi_sync_master_net_avg_wait_time     | 0     |
+| Rpl_semi_sync_master_net_wait_time         | 0     |
+| Rpl_semi_sync_master_net_waits             | 6     |
+| Rpl_semi_sync_master_no_times              | 1     |
+| Rpl_semi_sync_master_no_tx                 | 1     |
+| Rpl_semi_sync_master_status                | ON    |
+| Rpl_semi_sync_master_timefunc_failures     | 0     |
+| Rpl_semi_sync_master_tx_avg_wait_time      | 1120  |
+| Rpl_semi_sync_master_tx_wait_time          | 4483  |
+| Rpl_semi_sync_master_tx_waits              | 4     |
+| Rpl_semi_sync_master_wait_pos_backtraverse | 0     |
+| Rpl_semi_sync_master_wait_sessions         | 0     |
+| Rpl_semi_sync_master_yes_tx                | 4     |
++--------------------------------------------+-------+
+14 rows in set (0.00 sec)
+```
+ 
+
+上述状态变量中，比较重要的有以下几个
+
+ 
+
+`Rpl_semi_sync_master_clients`
+
+当前半同步复制从的个数，如果是一主多从的架构，并不包含异步复制从的个数。
+
+ 
+
+`Rpl_semi_sync_master_no_tx`
+
+The number of commits that were not acknowledged successfully by a slave.
+
+具体到上面的测试中，指的是insert into test.test values(2)这个事务。
+
+ 
+
+`Rpl_semi_sync_master_yes_tx`
+
+The number of commits that were acknowledged successfully by a slave.
+
+
+
+ 
+
+> ### 总结
+
+1. 在一主多从的架构中，如果要开启半同步复制，并不要求所有的从都是半同步复制。
+
+2. MySQL 5.7极大的提升了半同步复制的性能。
+
+    5.6版本的半同步复制，dump thread 承担了两份不同且又十分频繁的任务：传送binlog 给slave ，还需要等待slave反馈信息，而且这两个任务是串行的，dump thread 必须等待 slave 返回之后才会传送下一个 events 事务。dump thread 已然成为整个半同步提高性能的瓶颈。在高并发业务场景下，这样的机制会影响数据库整体的TPS 。
+
+    5.7版本的半同步复制中，独立出一个 ack collector thread ，专门用于接收slave 的反馈信息。这样master 上有两个线程独立工作，可以同时发送binlog 到slave ，和接收slave的反馈。 
+
+
+
 
 
 ### 复制中的单点故障问题

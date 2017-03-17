@@ -443,6 +443,141 @@ rpl_semi_sync_master_timeout=1000
 [root@mastera0 mysql]# service mysql start
 ```
 
+##### 脚本实现自动安装MySQL 
+
+如果需要同时安装10台甚至1000台，通过脚本来完成一定是极好的！
+
+```shell
+#!/bin/bash
+
+# auto_install_mysql_5.6.20 
+
+# 参数设置
+# --binpos=指定mysql二进制安装包的位置
+# --basedir=指定mysql安装位置
+# --datadir=指定mysql数据存放位置
+# --binlogdir=指定mysqlbinlog存放位置
+# --piddir=指定mysql进程存放位置
+# --tmpdir=指定mysql临时文件位置
+# --help 查看帮助
+
+# eg. auto_install_mysql_5.6.20 --binpos=/tmp/mysql.tar.gz --datadir=/data/mysql/data --basedir=/usr/local/mysql
+
+# 遍历位置参数，获取对应的参数值
+for i in ${@}
+do
+	case ${i%=*} in 
+	--binpos)
+			binpos=${i#*=};;
+	--basedir)
+			basedir=${i#*=};;
+	--datadir)
+			datadir=${i#*=};;
+	--binlogdir)
+			binlogdir=${i#*=};;
+	--piddir)
+			piddir=${i#*=};;
+	--tmpdir)
+			tmpdir=${i#*=};;
+	esac
+done
+
+TAR(){
+# 解压mysql二进制安装包到指定mysql安装位置
+tar -xf $binpos -C /tmp &> /dev/null
+rpm=${binpos##*/}
+rm -r $basedir 
+mkdir $basedir -p 
+mv /tmp/${rpm%.tar.gz}/* $basedir
+}
+
+ADD_user_dir(){
+# 创建mysql用户和组
+# 创建数据目录，二进制日志存放路径，临时目录，pid目录
+useradd mysql &> /dev/null 
+for i in $datadir $binlogdir $piddir $tmpdir;do
+	rm -r $i
+	mkdir $i -p &> /dev/null 
+	chown -R mysql:mysql $i
+done
+}
+
+INIT(){
+# 通过脚本生成初始化数据
+$basedir/scripts/mysql_install_db --user=mysql --datadir=$datadir --basedir=$basedir
+}
+
+CONF(){
+# 获取服务器IP地址的主机位，用作server-id的值
+serverid=`ifconfig|grep -A 1 eno|tail -n 1|awk '{print $2}'|awk -F '.' '{print $4}'`
+
+cat > /etc/my.cnf << ENDF
+[client]
+#如果不认识这个参数会忽略
+loose-default-character-set=utf8
+loose-prompt='\u@\h:\p [\d]>'
+socket=/tmp/mysql.sock
+
+[mysqld]
+basedir = $basedir
+datadir = $datadir
+user=mysql
+port = 3306
+socket=/tmp/mysql.sock
+pid-file=$piddir/mysql.pid
+tmpdir=$tmpdir
+character_set_server=utf8
+
+
+#skip
+skip-external_locking=1
+skip-name-resolve=1
+
+#AB replication
+server-id = $serverid
+log-bin = $binlogdir/`hostname|awk -F . '{print $1}'`
+binlog_format=row
+max_binlog_cache_size=2000M
+max_binlog_size=1G
+sync_binlog=1
+#expire_logs_days=7
+
+#semi_sync
+#rpl_semi_sync_master_enabled=1
+#rpl_semi_sync_master_timeout=1000
+ENDF
+
+# 将数据库服务启动脚本复制到/etc/init.d/
+cp $basedir/support-files/mysql.server /etc/init.d/mysql
+
+# 修改PATH路径，将mysql相关命令所在目录加入
+echo export PATH=$PATH:$basedir/support-files/ >> /etc/bashrc
+source /etc/bashrc
+}
+
+Main(){
+TAR 
+ADD_user_dir 
+INIT 
+CONF 
+}
+
+Main
+
+```
+
+总结
+
+相对于rpm包安装，二进制安装稍复杂一点，但只需要实现规划好basedir、datadir、binlogdir、tmpdir等路径即可
+
+另需要注意给mysql使用的相关目录的权限为mysql:mysql
+
+还有就是，如果已经安装过其他版本的数据库，记得卸载干净了。
+
+此处安装的只是服务端，客户端需要另外安装。
+
+---
+
 ### MySQL客户端连接数据库
 
 #### MySQL客户端的使用
