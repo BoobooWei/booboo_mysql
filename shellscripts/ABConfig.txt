@@ -1,0 +1,32 @@
+
+[mysqld]
+server-id=1
+log-bin=/var/lib/mysql-log/mastera
+# GTID
+gtid_mode=on
+enforce_gtid_consistency=1
+# crash safe
+sync_binlog=1
+innodb_flush_log_at_trx_commit=1
+# semi sync
+# rpl‐semi_sync_master_enable=1
+# rpl_semi_sync_master_timeout=1000 #ms
+# rpl_semi_sync_master_warit_slave_count=num
+
+
+## slave
+
+[mysqld]
+server-id=2
+#log-bin=/var/lib/mysql-log/masterb
+# GTID
+gtid_mode=on
+enforce_gtid_consistency=1
+# semi sync
+# rpl‐semi_sync_slave_enable=1
+# MTS
+slave_parallel_type=logical_clock
+slave_parallel_workers=2
+# semi sync
+# rpl‐semi_sync_slave_enable=1
+
