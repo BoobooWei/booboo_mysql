@@ -1,3 +1,4 @@
+```shell
 MYSQL
 一、MySQL管理课程简介
 1.MySQL 管理课程
@@ -144,3 +145,4 @@ MYSQL
 		mycat
 6.实战项目： 数据库中间件 Mycat 实现 读写分离负载均衡，后端数据库服务器为 MySQL 5.7 MMSS Multisource Replication 高可用架构
 7.实战项目:  数据库中间件 Mycat 实现 读写分离负载均衡，后端数据库服务器为 Mariadb 10.2 Galera Cluster同步复制高可用架构
+```
