@@ -34,7 +34,7 @@ mysql经典逻辑备份工具
 ⑥：--opt
 
 该参数默认开启，表示快递启动--add-drop-table --add-locks --create-options --disable-keys --extended-insert --lock-tables --quick --set-charset选项，通过 --skip-opt 关闭。
-```shell
+
 --all-databases  , -A
 导出全部数据库。
 
@@ -272,7 +272,7 @@ TCP/IP和socket连接的缓存大小。
 
 --default_auth
 客户端插件默认使用权限。
-```
+
 
 ## mysqlpump
 
