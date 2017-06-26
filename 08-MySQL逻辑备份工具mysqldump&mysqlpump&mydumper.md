@@ -273,6 +273,41 @@ TCP/IP和socket连接的缓存大小。
 --default_auth
 客户端插件默认使用权限。
 
+备份数据库常用案例：
+
+| 备份内容 | 情况1  | 参数   | 情况2  | 参数             | 情况3   |
+| ---- | ---- | ---- | ---- | -------------- | ----- |
+| 库的数量 | 所有   | -A   | 多个   | -B db1 db2 db3 | db1   |
+| 表的数量 | 所有   |      | 多个   | --table t1 t2  | 一个 t1 |
+| 结构   | 导出   |      | 不导出  | -t             |       |
+| 数据   | 导出   |      | 不导出  | -d             |       |
+| 列名   | 导出   | -c   | 不导出  |                |       |
+
+
+
+1.导出结构不导出数据
+
+mysqldump -d 数据库名 -uroot -p > xxx.sql
+
+2.导出数据不导出结构
+
+mysqldump -t 数据库名 -uroot -p > xxx.sql
+
+3.导出数据和表结构
+
+mysqldump 数据库名 -uroot -p > xxx.sql
+
+4.导出特定表的结构
+
+mysqldump -uroot -p -B数据库名 --table 表名 > xxx.sql
+
+5.导出db1库中t1表的表结构和数据，并且打印出列名
+
+mysqldump -uusername -ppassword db1 t1 -c > xxx.sql
+
+ -c, --complete-insert   使用完整的insert语句(用列名字)。 
+
+
 
 ## mysqlpump
 
