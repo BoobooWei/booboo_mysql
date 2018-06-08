@@ -59,7 +59,7 @@ MySQL 中的同步复制首先出现在MySQL Clushter （NDB Cluster）。它在
 ##### Galera Cluster 集群
 
 MariaDB作为Mysql的一个分支，在开源项目中已经广泛使用，例如大热的openstack，所以，为了保证服务的高可用性，同时提高系统的负载能力，集群部署是必不可少的。
- 
+
 MariaDB Galera Cluster 介绍
 
 MariaDB集群是MariaDB同步多主机集群。它仅支持XtraDB/ InnoDB存储引擎（虽然有对MyISAM实验支持 - 看wsrep_replicate_myisam系统变量）。
@@ -287,7 +287,7 @@ MariaDB [(none)]> show global status like 'wsrep_cluster%';
 从上面的总结来看，我们希望在这个架构下，能够实现更多的功能，比如：
 
 1. 负载均衡	就是说能够均衡地分配前端的用户请求
-2. 读写分离	两台master用来写，两台slave用来读，提升整体性能
+	. 读写分离	两台master用来写，两台slave用来读，提升整体性能
 
 #### 解决方案
 
@@ -356,9 +356,9 @@ MariaDB [(none)]> show global status like 'wsrep_cluster%';
 |DBPROXY|||
 |:--|:--|:--|
 |Mysql-proxy|	lua脚本| 魔兽世界|
-|tddl|	淘宝的数据库代理|	没有运行环境|
-|atlas|	奇虎360的数据库代理|	rhel7不能用|
-|corber|		阿里巴巴|	测试版不能用|
+|[tddl](https://github.com/alibaba/tb_tddl/wiki/TDDL-dynamic-datasource-%E5%85%A5%E9%97%A8%E4%B8%8E%E4%BD%BF%E7%94%A8)|	淘宝的数据库代理|	没有运行环境|
+|[atlas](https://github.com/Qihoo360/Atlas/wiki/Atlas%E7%9A%84%E5%AE%89%E8%A3%85)| 奇虎360的数据库代理[ 希腊神话被罚作苦役的大力神 ] |	rhel7不能用|
+|[cobar](https://github.com/alibaba/cobar)|		阿里巴巴|	测试版不能用|
 |mycat	|	阿里巴巴二次开发|商业型产品|
 
 
