@@ -1,3 +1,5 @@
+这是一个针对初学者的教程。工作进阶请点击[MySLQ 进阶](https://github.com/BoobooWei/DBA_Mysql)
+
 ```shell
 MYSQL
 一、MySQL管理课程简介
